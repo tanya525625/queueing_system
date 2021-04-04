@@ -1,4 +1,5 @@
 import numpy as np
+# import matplotlib.pyplot as plt
 
 from queuing_system import QueuingSystem
 
@@ -23,6 +24,7 @@ def analyze_for_different_time(system: QueuingSystem, timespan: np.array, p_0: n
     analytically_solutions.insert(0, p_0)
     timespan.insert(0, t_0)
     analytically_solutions = list(np.transpose(analytically_solutions))
+    # analytically_solutions = list(analytically_solutions)
     return analytically_solutions, timespan
 
 
@@ -41,4 +43,6 @@ if __name__ == '__main__':
     system = QueuingSystem(lmd, mu, n)
     timespan = list(range(1, 11))
     analytically_solutions, timespan = analyze_for_different_time(system, timespan, p_0, t_0)
+    # plt.plot(analytically_solutions)
+    # plt.show()
     system.make_plot(timespan, analytically_solutions)

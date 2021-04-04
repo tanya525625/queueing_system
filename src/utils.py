@@ -17,7 +17,10 @@ def matrix(lmd, mu, n):
             if j == i - 1:
                 f[i, j] = lmd
             if j == i:
-                f[i, j] = -(lmd + i * mu)
+                if i == n:
+                    f[i, j] = -i * mu
+                else:
+                    f[i, j] = -(lmd + i * mu)
             if j == i + 1:
                 f[i, j] = (i + 1) * mu
     return f
