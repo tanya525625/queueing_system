@@ -23,10 +23,10 @@ def rk4(f, t_0, p_0, t, h=0.1):
     tV[-1] = t
     p = np.empty((len(tV), len(p_0)))
     p[0] = p_0
-    for i, index in enumerate(tV[: -2]):
+    for i, index in enumerate(tV[:-2]):
         p[i + 1] = one_step(f, p[i], h)
-        if optimization(p[i+1], p[i]):
-            p = p.tolist()[:i+1]
+        if optimization(p[i + 1], p[i]):
+            p = p.tolist()[: i + 1]
             break
     h = tV[-1] - tV[-2]
     p[-1] = one_step(f, p[-2], h)

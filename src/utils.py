@@ -1,5 +1,7 @@
-import numpy as np
 import math
+
+import numpy as np
+import plotly.graph_objects as go
 
 
 def matrix(lmd, mu, n):
@@ -39,13 +41,37 @@ def limit_prob(n, lmd, mu):
 
 
 # Показатели эффективности, отбразить в легенде желательно с названиями
-def performance_indicators(n, lmd, mu):
-    #     А - абсолютная пропускная способность СМО
-    A = (lmd * mu) / (lmd + mu)
+def performance_indicators(lmd, mu):
+    # А - абсолютная пропускная способность СМО
+    A = round((lmd * mu) / (lmd + mu), 2)
     # Q - относительная пропускная способность
-    Q = mu / (lmd + mu)
+    Q = round(mu / (lmd + mu), 2)
     # Р_отк - вероятность отказа
-    P = lmd / (lmd + mu)
+    P = round(lmd / (lmd + mu), 2)
     # K_зан - среднее число занятых каналов
-    K = A / mu
-    return [A, Q, P, K]
+    K = round(A / mu, 2)
+    return [A, Q, P, K], \
+           ['Absolute throughput', 'Relative throughput', 'Failure probability', 'Average number of busy channels']
+
+
+def make_layout(text):
+    return go.Layout(
+        annotations=[
+            go.layout.Annotation(
+                text=text,
+                align='left',
+                valign='middle',
+                showarrow=True,
+                xref='paper',
+                yref='paper',
+                x=1.14,
+                y=0.01,
+                bordercolor='black',
+                borderwidth=1
+            )
+        ]
+    )
+
+
+def constants_as_legend_text(constants, names):
+    return '<br>'.join([f"{name}: {const}" for name, const in zip(names, constants)])
