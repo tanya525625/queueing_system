@@ -56,7 +56,7 @@ class QueuingSystem:
             )
         performance_indicators, perfomances_names = utils.performance_indicators(self.lmd, self.mu)
         fig.update_layout(utils.make_layout(utils.constants_as_legend_text(performance_indicators, perfomances_names)))
-        fig.show()
+        fig.write_html("1.html")
 
 
 class AnalyticSystem(QueuingSystem):
