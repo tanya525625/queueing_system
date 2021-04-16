@@ -41,17 +41,17 @@ def limit_prob(n, lmd, mu):
 
 
 # Показатели эффективности, отбразить в легенде желательно с названиями
-def performance_indicators(lmd, mu):
-    # А - абсолютная пропускная способность СМО
-    A = round((lmd * mu) / (lmd + mu), 2)
-    # Q - относительная пропускная способность
-    Q = round(mu / (lmd + mu), 2)
+def performance_indicators(lmd, mu, p_n):
     # Р_отк - вероятность отказа
-    P = round(lmd / (lmd + mu), 2)
+    P = round(p_n[-1], 3)
+    # Q - относительная пропускная способность
+    Q = round(1-P, 3)
+    # А - абсолютная пропускная способность СМО
+    A = round(lmd * Q, 3)
     # K_зан - среднее число занятых каналов
     K = round(A / mu, 2)
-    return [A, Q, P, K], \
-           ['Absolute throughput', 'Relative throughput', 'Failure probability', 'Average number of busy channels']
+    return [P, Q, A, K], \
+           ['Failure probability', 'Relative throughput', 'Absolute throughput', 'Average number of busy channels']
 
 
 def make_layout(text):
