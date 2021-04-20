@@ -6,11 +6,12 @@ lmd = 0.25
 mu = 1 / 3
 n = 3
 minutes_for_model = 100 #Количество генерируемых заявок
-p = np.zeros((minutes_for_model - n - 1, n + 1))
+p = np.zeros((minutes_for_model - n - 1 + 1, n + 1))
 p_pred = np.zeros(n+1)
 min_it = 10000
-it_num = 500
-h = 5 #Срез времени
+it_num = 5000
+p[0, 0] = it_num
+h = 20 #Срез времени
 reject_count = 0  # счетчик отказов
 
 for i in range(it_num):
@@ -33,7 +34,7 @@ for i in range(it_num):
 
 
     handles_end = np.zeros(n) #вектор времени выхода заявки
-    j = 0
+    j = 1
     t = 0
     for i in range(n):
         handles_end[i] = requests[i] + handles[i]
@@ -59,6 +60,13 @@ for i in range(it_num):
         else:
             handles_end[ind] = requests[request] + handles[request]
 
+for i in range(n+1):
+    print('Предельная вероятность '+ str(i) + ': ' +  str(p_pred[i] / np.sum(p_pred)))
+
+print('Вероятность отказа ' + str(reject_count/(minutes_for_model * it_num)))
+print('Относительная пропускная способность ' + str(1-reject_count/(minutes_for_model * it_num)))
+print('Абсолютная пропускная способность ' + str(lmd * (1-reject_count/(minutes_for_model * it_num))))
+print('Среднее число занятых каналов ' + str((lmd * (1-reject_count/(minutes_for_model * it_num)))/mu))
 
 k = int(min_it/h)
 p = p[:k,:]
@@ -69,10 +77,3 @@ for y in p_1.tolist():
     plot.plot(time, y)
 plot.show()
 
-for i in range(n+1):
-    print('Предельная вероятность '+ str(i) + ': ' +  str(p_pred[i] / np.sum(p_pred)))
-
-print('Вероятность отказа ' + str(reject_count/(minutes_for_model * it_num)))
-print('Относительная пропускная способность ' + str(1-reject_count/(minutes_for_model * it_num)))
-print('Абсолютная пропускная способность ' + str(lmd * (1-reject_count/(minutes_for_model * it_num))))
-print('Среднее число занятых каналов ' + str((lmd * (1-reject_count/(minutes_for_model * it_num)))/mu))
