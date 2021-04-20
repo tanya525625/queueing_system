@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
@@ -73,3 +75,60 @@ class AnalyticSystem(QueuingSystem):
     def solve_analytically(self, t, h=0.01):
         matrix = utils.matrix(self.lmd, self.mu, self.n)
         return rk4(matrix, self.t_0, self.p_0, t, h)
+
+
+class ImitationModel(QueuingSystem):
+    def __init__(self, lmd, mu, n):
+        self.lmd = lmd
+        self.mu = mu
+        self.n = n
+
+    def solve_by_imitation(self, minutes_for_model, min_it, it_num, h, max_t):
+        p = np.zeros((minutes_for_model - self.n - 1, self.n + 1))
+        p_pred = np.zeros(self.n + 1)
+        reject_count = 0
+        for i in range(it_num):
+            requests = []  # время получения заявок
+            last_requests_time = 0.0
+            for minute in range(0, minutes_for_model - 1):
+                rnd = random.expovariate(self.lmd)  # Время между заявками
+                last_requests_time += rnd
+                requests.append(last_requests_time)
+            if requests[-1] < min_it:
+                min_it = requests[-1]
+            print(requests)
+
+            handles = []
+            # Для каждой заявки генерируем время ее обработки
+            for request in requests:
+                rnd = random.expovariate(self.mu)
+                handles.append(rnd)
+            # print(handles)
+
+            handles_end = np.zeros(self.n)  # вектор времени выхода заявки
+
+            j = 0
+            t = 0
+            for i in range(self.n):
+                handles_end[i] = requests[i] + handles[i]
+            for request in range(self.n, len(requests)):
+                k = 0  # счетчик занятых каналов
+                for i in range(self.n):
+                    if handles_end[i] > requests[request]:
+                        k += 1
+                    p_pred[k] += 1
+                c = 0  # счетчик занятых каналов
+                if requests[request] > t:
+                    for i in range(self.n):
+                        if handles_end[i] > requests[request]:
+                            c += 1
+                    p[j, c] += 1
+                    j += 1
+                    t += h
+
+                ind = np.argmin(handles_end)
+                if requests[request] < min(handles_end):
+                    reject_count += 1  # отказано в обслуживании
+                else:
+                    handles_end[ind] = requests[request] + handles[request]
+        return p, p_pred, min_it
