@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+from scipy.interpolate import UnivariateSpline
 import plotly.graph_objects as go
 
 
@@ -54,6 +55,23 @@ def performance_indicators(lmd, mu, p_n):
            ['Failure probability', 'Relative throughput', 'Absolute throughput', 'Average number of busy channels']
 
 
+def emp_performance_indicators(lmd, mu, reject_count, minutes_for_model, it_num):
+    # Р_отк - вероятность отказа
+    P = round(reject_count/(minutes_for_model * it_num), 3)
+    # Q - относительная пропускная способность
+    Q = round(1 - reject_count / (minutes_for_model * it_num), 3)
+    # А - абсолютная пропускная способность СМО
+    A = round(lmd * (1-reject_count/(minutes_for_model * it_num)), 3)
+    # K_зан - среднее число занятых каналов
+    K = round(lmd * (1-reject_count/(minutes_for_model * it_num)) / mu, 3)
+    return [P, Q, A, K], \
+           ['Failure probability', 'Relative throughput', 'Absolute throughput', 'Average number of busy channels']
+
+
+def emp_lim_prob(p_pred):
+    return [p_pred[i] / np.sum(p_pred) for i in range(len(p_pred))]
+
+
 def make_layout(text):
     return go.Layout(
         annotations=[
@@ -75,3 +93,16 @@ def make_layout(text):
 
 def constants_as_legend_text(constants, names):
     return '<br>'.join([f"{name}: {const}" for name, const in zip(names, constants)])
+
+
+def smooth_solutions(solutions, time):
+    new_timespan = np.linspace(min(time), max(time), 1000)
+    for i, sol in enumerate(solutions):
+        solutions[i] = smooth_line(time, sol, new_timespan)
+    return new_timespan, solutions
+
+
+def smooth_line(list_x, list_y, new_timespan):
+    spl = UnivariateSpline(list_x, list_y, k=5)
+    return spl(new_timespan)
+
