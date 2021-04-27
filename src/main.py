@@ -40,15 +40,17 @@ if __name__ == "__main__":
     analytic_system.make_plot(timespan, analytically_solutions, 'analytic_solution', utils.performance_indicators,
                               (lmd, mu, analytically_solutions[-1]), utils.limit_prob, (n, lmd, mu))
 
-    minutes_for_model = 100  # Количество генерируемых заявок)
-    min_it = 10000
+    minutes_for_model = 150  # Количество генерируемых заявок
+    min_it = 150
     it_num = 500
-    max_t = 10
+    max_t = 11
     h = 1  # Срез времени
     im_model = ImitationModel(lmd, mu, n)
     p, p_pred, min_it, reject_count = im_model.solve_by_imitation(minutes_for_model, min_it, it_num, h)
+
     time, solutions = im_model.filter_by_max_time(p, max_t, min_it, h)
     time, solutions = utils.smooth_solutions(solutions, time)
+    time, solutions = utils.smooth_solutions_by_spline(solutions, time)
     im_model.make_plot(time, solutions, 'imitation_model',
                        utils.emp_performance_indicators, (lmd, mu, reject_count, minutes_for_model, it_num),
                        utils.emp_lim_prob, (p_pred, ))

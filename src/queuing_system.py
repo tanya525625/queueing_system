@@ -3,6 +3,7 @@ import random
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from tqdm import tqdm
 
 import utils
 from numerecal_methods import rk4
@@ -84,11 +85,12 @@ class ImitationModel(QueuingSystem):
         self.n = n
 
     def solve_by_imitation(self, minutes_for_model, min_it, it_num, h):
-        p = np.zeros((minutes_for_model - self.n - 1 + 1, self.n + 1))
+        p = np.zeros((minutes_for_model, self.n + 1))
         p_pred = np.zeros(self.n + 1)
         reject_count = 0
         p[0, 0] = it_num
-        for i in range(it_num):
+
+        for i in tqdm(range(it_num)):
             requests = []  # время получения заявок
             last_requests_time = 0.0
             for minute in range(0, minutes_for_model - 1):
@@ -97,7 +99,7 @@ class ImitationModel(QueuingSystem):
                 requests.append(last_requests_time)
             if requests[-1] < min_it:
                 min_it = requests[-1]
-
+            # print(requests)
             handles = []
             # Для каждой заявки генерируем время ее обработки
             for request in requests:
@@ -108,7 +110,7 @@ class ImitationModel(QueuingSystem):
             handles_end = np.zeros(self.n)  # вектор времени выхода заявки
 
             j = 1
-            t = 0
+            t = 25
             for i in range(self.n):
                 handles_end[i] = requests[i] + handles[i]
             for request in range(self.n, len(requests)):
@@ -116,7 +118,7 @@ class ImitationModel(QueuingSystem):
                 for i in range(self.n):
                     if handles_end[i] > requests[request]:
                         k += 1
-                    p_pred[k] += 1
+                    # p_pred[k] += 1
                 c = 0  # счетчик занятых каналов
                 if requests[request] > t:
                     for i in range(self.n):
@@ -131,6 +133,7 @@ class ImitationModel(QueuingSystem):
                     reject_count += 1  # отказано в обслуживании
                 else:
                     handles_end[ind] = requests[request] + handles[request]
+                    p_pred[k] += 1
         p = p / np.max(p)
         return p, p_pred, min_it, reject_count
 
@@ -138,12 +141,13 @@ class ImitationModel(QueuingSystem):
     def filter_by_max_time(p, max_t, min_it, h):
         k = int(min_it / h)
         p = p[:k, :]
-        time = np.arange(1, k, 1)
+        time = np.arange(h, k, h)
         p_1 = np.transpose(p)
-        time = np.insert(time, 0, 0)
         cut_time = [t for t in time if t <= max_t]
         time_inds = [list(time).index(t) for t in cut_time]
         cut_p_vectors = []
         for p_vect in p_1.tolist():
             cut_p_vectors.append([p_vect[i] for i in time_inds])
+        cut_time = np.insert(cut_time, 0, 0)
+        cut_time = cut_time[:-1]
         return cut_time, cut_p_vectors
