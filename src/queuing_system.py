@@ -1,6 +1,9 @@
+import random
+
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from tqdm import tqdm
 
 import utils
 from numerecal_methods import rk4
@@ -19,14 +22,14 @@ class QueuingSystem:
         self.mu = mu
         self.n = n
 
-    def make_plot(self, t, states_arr):
+    def make_plot(self, t, states_arr, plot_name, legends_function, leg_args, limit_prob_func, lim_prob_args):
         fig = go.Figure()
         fig.update_layout(
             title="Failure probability distribution",
             xaxis_title="timespan (t)",
             yaxis_title="probability distributions values (p)",
         )
-        probabilities_limits = utils.limit_prob(self.n, self.lmd, self.mu)
+        probabilities_limits = limit_prob_func(*lim_prob_args)
         colors = px.colors.sequential.Sunset[-(self.n + 1) :]
         for i, (state, prob_l, color) in enumerate(
             zip(states_arr, probabilities_limits, colors)
@@ -54,9 +57,9 @@ class QueuingSystem:
                     ),
                 )
             )
-        performance_indicators, perfomances_names = utils.performance_indicators(self.lmd, self.mu, states_arr[-1])
+        performance_indicators, perfomances_names = legends_function(*leg_args)
         fig.update_layout(utils.make_layout(utils.constants_as_legend_text(performance_indicators, perfomances_names)))
-        fig.write_html("1.html")
+        fig.write_html(f'{plot_name}.html', auto_open=True)
 
 
 class AnalyticSystem(QueuingSystem):
@@ -73,3 +76,78 @@ class AnalyticSystem(QueuingSystem):
     def solve_analytically(self, t, h=0.01):
         matrix = utils.matrix(self.lmd, self.mu, self.n)
         return rk4(matrix, self.t_0, self.p_0, t, h)
+
+
+class ImitationModel(QueuingSystem):
+    def __init__(self, lmd, mu, n):
+        self.lmd = lmd
+        self.mu = mu
+        self.n = n
+
+    def solve_by_imitation(self, minutes_for_model, min_it, it_num, h):
+        p = np.zeros((minutes_for_model, self.n + 1))
+        p_pred = np.zeros(self.n + 1)
+        reject_count = 0
+        p[0, 0] = it_num
+
+        for i in tqdm(range(it_num)):
+            requests = []  # время получения заявок
+            last_requests_time = 0.0
+            for minute in range(0, minutes_for_model - 1):
+                rnd = random.expovariate(self.lmd)  # Время между заявками
+                last_requests_time += rnd
+                requests.append(last_requests_time)
+            if requests[-1] < min_it:
+                min_it = requests[-1]
+            # print(requests)
+            handles = []
+            # Для каждой заявки генерируем время ее обработки
+            for request in requests:
+                rnd = random.expovariate(self.mu)
+                handles.append(rnd)
+            # print(handles)
+
+            handles_end = np.zeros(self.n)  # вектор времени выхода заявки
+
+            j = 1
+            t = 25
+            for i in range(self.n):
+                handles_end[i] = requests[i] + handles[i]
+            for request in range(self.n, len(requests)):
+                k = 0  # счетчик занятых каналов
+                for i in range(self.n):
+                    if handles_end[i] > requests[request]:
+                        k += 1
+                    # p_pred[k] += 1
+                c = 0  # счетчик занятых каналов
+                if requests[request] > t:
+                    for i in range(self.n):
+                        if handles_end[i] > requests[request]:
+                            c += 1
+                    p[j, c] += 1
+                    j += 1
+                    t += h
+
+                ind = np.argmin(handles_end)
+                if requests[request] < min(handles_end):
+                    reject_count += 1  # отказано в обслуживании
+                else:
+                    handles_end[ind] = requests[request] + handles[request]
+                    p_pred[k] += 1
+        p = p / np.max(p)
+        return p, p_pred, min_it, reject_count
+
+    @staticmethod
+    def filter_by_max_time(p, max_t, min_it, h):
+        k = int(min_it / h)
+        p = p[:k, :]
+        time = np.arange(h, k, h)
+        p_1 = np.transpose(p)
+        cut_time = [t for t in time if t <= max_t]
+        time_inds = [list(time).index(t) for t in cut_time]
+        cut_p_vectors = []
+        for p_vect in p_1.tolist():
+            cut_p_vectors.append([p_vect[i] for i in time_inds])
+        cut_time = np.insert(cut_time, 0, 0)
+        cut_time = cut_time[:-1]
+        return cut_time, cut_p_vectors
