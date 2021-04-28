@@ -69,11 +69,6 @@ def emp_performance_indicators(lmd, mu, reject_count, minutes_for_model, it_num)
 
 
 def emp_lim_prob(p_pred):
-    # p_pred[0] = p_pred[0] - 0.2
-    # print(p_pred)
-    # p_pred = p_pred / np.max(p_pred)
-    print(p_pred)
-
     return [p_pred[i] / np.sum(p_pred) for i in range(len(p_pred))]
 
 
